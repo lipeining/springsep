@@ -7,8 +7,10 @@ import java.util.UUID;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,14 +23,25 @@ import com.alibaba.fastjson.*;
 
 import com.example.springbootweb.model.*;
 import com.example.springbootweb.repository.*;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 @RestController
 public class TagController {
   @Autowired
   private TagRepository tagRepository;
+  @Autowired
+  private StringRedisTemplate stringRedisTemplate;
+  @Autowired
+  private RedisTemplate redisTemplate;
 
   @RequestMapping("/tags/{name}")
   public Tag getTag(@PathVariable("name") String name) {
+    ValueOperations<String, Tag> operations= redisTemplate.opsForValue();
+    Tag redisTag = operations.get("tags:"+name);
+    if(redisTag != null) {
+      return redisTag;
+    }
     Tag tag = tagRepository.findByName(name);
     System.out.println(tag);
     return tag;
@@ -49,6 +62,8 @@ public class TagController {
       Tag tag = new Tag(name);
       System.out.println(tag);
       tagRepository.save(tag);
+      ValueOperations<String, Tag> operations= redisTemplate.opsForValue();
+      operations.set("tags:"+tag.getName(), tag, 1, TimeUnit.DAYS);
       return tag;
     } catch (Exception e) {
       e.printStackTrace();

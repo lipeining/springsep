@@ -1,4 +1,4 @@
-package com.example.springbootweb;
+package com.example.springbootweb.config;
 
 import java.io.IOException;
 
@@ -9,7 +9,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-
 import org.apache.catalina.filters.RemoteIpFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -23,10 +22,11 @@ public class WebConfiguration {
     }
 
     @Bean
-    public FilterRegistrationBean testFilterRegistration() {
+    public FilterRegistrationBean<MyFilter> testFilterRegistration() {
 
-        FilterRegistrationBean registration = new FilterRegistrationBean();
-        registration.setFilter(new MyFilter());
+        FilterRegistrationBean<MyFilter> registration = new FilterRegistrationBean<>();
+        MyFilter myFilter = new MyFilter();
+        registration.setFilter(myFilter);
         registration.addUrlPatterns("/*");
         registration.addInitParameter("paramName", "paramValue");
         registration.setName("MyFilter");
@@ -34,7 +34,7 @@ public class WebConfiguration {
         return registration;
     }
 
-    public class MyFilter implements Filter {
+    public static class MyFilter implements Filter {
         @Override
         public void destroy() {
             // TODO Auto-generated method stub
@@ -46,6 +46,10 @@ public class WebConfiguration {
             // TODO Auto-generated method stub
             HttpServletRequest request = (HttpServletRequest) srequest;
             System.out.println("this is MyFilter,url :" + request.getRequestURI());
+//            HttpSession session = request.getSession();
+//            User sessionUser = (User) session.getAttribute("user");
+//            System.out.println("current session user is:");
+//            System.out.println(sessionUser);
             filterChain.doFilter(srequest, sresponse);
         }
 

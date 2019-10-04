@@ -105,4 +105,15 @@ public class User implements Serializable {
     this.regTime = regTime;
   }
 
+  @Override
+  public String toString() {
+    return "User{" +
+            "id=" + id +
+            ", userName='" + userName + '\'' +
+            ", password='" + passWord + '\'' +
+            ", email='" + email + '\'' +
+            ", nickname='" + nickName + '\'' +
+            ", regTime='" + regTime + '\'' +
+            '}';
+  }
 }

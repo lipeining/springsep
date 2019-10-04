@@ -31,35 +31,57 @@ import javax.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.cache.annotation.Cacheable;
+import javax.servlet.http.HttpSession;
+import java.util.UUID;
 @RestController
 public class UserController {
 
   @Autowired
   private UserRepository userRepository;
 
+
+  @RequestMapping("/uid")
+  String uid(HttpSession session) {
+    UUID uid = (UUID) session.getAttribute("uid");
+    if (uid == null) {
+      uid = UUID.randomUUID();
+    }
+    session.setAttribute("uid", uid);
+    return session.getId();
+  }
+
+  @Cacheable(value="user-key")
   @RequestMapping("/users/{name}")
-  public User getUser(@PathVariable("name") String name) {
+  public User getUser(HttpSession session, @PathVariable("name") String name) {
     // User user = userRepository.findByUserName(name);
     User user = new User();
-    user.setUserName("admin");
+    user.setUserName(name);
     Example<User> example = Example.of(user);
     ExampleMatcher matcher = ExampleMatcher.matching()
-        .withMatcher("username", ExampleMatcher.GenericPropertyMatchers.startsWith())// 模糊查询匹配开头，即{username}%
+        .withMatcher("userName", ExampleMatcher.GenericPropertyMatchers.startsWith())// 模糊查询匹配开头，即{username}%
         .withMatcher("address", ExampleMatcher.GenericPropertyMatchers.contains())// 全部模糊查询，即%{address}%
         .withIgnorePaths("password");// 忽略字段，即不管password是什么值都不加入查询条件
     Example<User> example2 = Example.of(user, matcher);
     Optional<User> useri = userRepository.findOne(example);
-    if (useri.isPresent()) {
-      return useri.get();
-    }
-    return null;
+    User sessionUser = (User) session.getAttribute("user");
+    User currentUser = useri.orElse(null);
+    System.out.println("old session user");
+    System.out.println(sessionUser);
+    session.setAttribute("user", currentUser);
+    return currentUser ;
   }
 
+  @Cacheable(value="users-key")
   @RequestMapping("/users")
-  public Page<User> getUsers(@RequestParam("page") int page, @RequestParam("size") int size) {
+  public List<User> getUsers(@RequestParam(name = "page", required = false, defaultValue = "1" ) int page,
+                             @RequestParam(name = "size", required = false, defaultValue = "10" ) int size) {
     Sort sort = new Sort(Sort.Direction.DESC, "id");
     Pageable pageable = new PageRequest(page, size, sort);
-    Page<User> users = userRepository.findAll(pageable);
+    System.out.println(page);
+    System.out.println(size);
+    Page<User> pageUser = userRepository.findAll(pageable);
+    List<User> users = pageUser.getContent();
     return users;
   }
 
